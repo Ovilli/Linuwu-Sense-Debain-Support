@@ -20,7 +20,12 @@
  #include <linux/backlight.h>
  #include <linux/leds.h>
  #include <linux/platform_device.h>
- #include <linux/platform_profile.h>
+/* platform_profile integration disabled for older kernel headers on Debian
+ * The upstream module expects newer platform_profile APIs (Arch/zen).
+ * To keep this module buildable on kernels without the matching API,
+ * platform_profile support is disabled below.
+ */
+/* #include <linux/platform_profile.h> */
  #include <linux/acpi.h>
  #include <linux/i8042.h>
  #include <linux/rfkill.h>
@@ -2159,194 +2164,19 @@ enum acer_wmi_predator_v4_oc {
      return turbo_led_state;
  }
  
- static int
- acer_predator_v4_platform_profile_get(struct device *dev,
-                       enum platform_profile_option *profile)
- {
-     u8 tp;
-     int err;
- 
-     err = WMID_gaming_get_misc_setting(ACER_WMID_MISC_SETTING_PLATFORM_PROFILE, &tp);
-     if (err)
-         return err;
- 
-     switch (tp) {
-     case ACER_PREDATOR_V4_THERMAL_PROFILE_TURBO:
-         *profile = PLATFORM_PROFILE_PERFORMANCE;
-         break;
-     case ACER_PREDATOR_V4_THERMAL_PROFILE_PERFORMANCE:
-         *profile = PLATFORM_PROFILE_BALANCED_PERFORMANCE;
-         break;
-     case ACER_PREDATOR_V4_THERMAL_PROFILE_BALANCED:
-         *profile = PLATFORM_PROFILE_BALANCED;
-         break;
-     case ACER_PREDATOR_V4_THERMAL_PROFILE_QUIET:
-         *profile = PLATFORM_PROFILE_QUIET;
-         break;
-     case ACER_PREDATOR_V4_THERMAL_PROFILE_ECO:
-         *profile = PLATFORM_PROFILE_LOW_POWER;
-         break;
-     default:
-         return -EOPNOTSUPP;
-     }
- 
-     return 0;
- }
- 
- static int
- acer_predator_v4_platform_profile_set(struct device *dev,
-                       enum platform_profile_option profile)
- {
-     int err,tp;
-     acpi_status status;
-     u64 on_AC;
- 
-     /* Check Power Source */
-     status = WMI_gaming_execute_u64(
-         ACER_WMID_GET_GAMING_SYS_INFO_METHODID,
-         ACER_WMID_CMD_GET_PREDATOR_V4_BAT_STATUS, &on_AC);
- 
-     if (ACPI_FAILURE(status))
-         return -EIO;
- 
-     /* Check power source */
-     /* Blocking these modes since in official version this is not supported when its not plugged in AC! */
-     if(!on_AC && (profile == PLATFORM_PROFILE_PERFORMANCE || profile == PLATFORM_PROFILE_BALANCED_PERFORMANCE || profile == PLATFORM_PROFILE_QUIET)){
-         return -EOPNOTSUPP;
-     }
- 
-     /* turn the fan down i mean its quiet mode | eco mode after all*/
-     if(profile == PLATFORM_PROFILE_QUIET || profile == PLATFORM_PROFILE_LOW_POWER) {
-         acpi_status stat = acer_set_fan_speed(0,0);
-         if(ACPI_FAILURE(stat)){
-             return -EIO;
-         }
-     }
- 
-     switch (profile) {
-     case PLATFORM_PROFILE_PERFORMANCE:
-         tp = ACER_PREDATOR_V4_THERMAL_PROFILE_TURBO;
-         break;
-     case PLATFORM_PROFILE_BALANCED_PERFORMANCE:
-         tp = ACER_PREDATOR_V4_THERMAL_PROFILE_PERFORMANCE;
-         break;
-     case PLATFORM_PROFILE_BALANCED:
-         tp = ACER_PREDATOR_V4_THERMAL_PROFILE_BALANCED;
-         break;
-     case PLATFORM_PROFILE_QUIET:
-         tp = ACER_PREDATOR_V4_THERMAL_PROFILE_QUIET;
-         break;
-     case PLATFORM_PROFILE_LOW_POWER:
-         tp = ACER_PREDATOR_V4_THERMAL_PROFILE_ECO;
-         break;
-     default:
-         return -EOPNOTSUPP;
-     }
- 
-     err = WMID_gaming_set_misc_setting(ACER_WMID_MISC_SETTING_PLATFORM_PROFILE, tp);
-     if (err)
-         return err;
- 
-     if (tp != acer_predator_v4_max_perf)
-         last_non_turbo_profile = tp;
- 
-     return 0;
- }
- 
- static int
- acer_predator_v4_platform_profile_probe(void *drvdata, unsigned long *choices)
- {
-     unsigned long supported_profiles;
-     int err;
- 
-     err = WMID_gaming_get_misc_setting(ACER_WMID_MISC_SETTING_SUPPORTED_PROFILES,
-                        (u8 *)&supported_profiles);
-     if (err)
-         return err;
- 
-     /* Iterate through supported profiles in order of increasing performance */
-     if (test_bit(ACER_PREDATOR_V4_THERMAL_PROFILE_ECO, &supported_profiles)) {
-         set_bit(PLATFORM_PROFILE_LOW_POWER, choices);
-         acer_predator_v4_max_perf = ACER_PREDATOR_V4_THERMAL_PROFILE_ECO;
-         last_non_turbo_profile = ACER_PREDATOR_V4_THERMAL_PROFILE_ECO;
-     }
- 
-     if (test_bit(ACER_PREDATOR_V4_THERMAL_PROFILE_QUIET, &supported_profiles)) {
-         set_bit(PLATFORM_PROFILE_QUIET, choices);
-         acer_predator_v4_max_perf = ACER_PREDATOR_V4_THERMAL_PROFILE_QUIET;
-         last_non_turbo_profile = ACER_PREDATOR_V4_THERMAL_PROFILE_QUIET;
-     }
- 
-     if (test_bit(ACER_PREDATOR_V4_THERMAL_PROFILE_BALANCED, &supported_profiles)) {
-         set_bit(PLATFORM_PROFILE_BALANCED, choices);
-         acer_predator_v4_max_perf = ACER_PREDATOR_V4_THERMAL_PROFILE_BALANCED;
-         last_non_turbo_profile = ACER_PREDATOR_V4_THERMAL_PROFILE_BALANCED;
-     }
- 
-     if (test_bit(ACER_PREDATOR_V4_THERMAL_PROFILE_PERFORMANCE, &supported_profiles)) {
-         set_bit(PLATFORM_PROFILE_BALANCED_PERFORMANCE, choices);
-         acer_predator_v4_max_perf = ACER_PREDATOR_V4_THERMAL_PROFILE_PERFORMANCE;
- 
-         /* We only use this profile as a fallback option in case no prior
-          * profile is supported.
-          */
-         if (last_non_turbo_profile < 0)
-             last_non_turbo_profile = ACER_PREDATOR_V4_THERMAL_PROFILE_PERFORMANCE;
-     }
- 
-     if (test_bit(ACER_PREDATOR_V4_THERMAL_PROFILE_TURBO, &supported_profiles)) {
-         set_bit(PLATFORM_PROFILE_PERFORMANCE, choices);
-         acer_predator_v4_max_perf = ACER_PREDATOR_V4_THERMAL_PROFILE_TURBO;
- 
-         /* We need to handle the hypothetical case where only the turbo profile
-          * is supported. In this case the turbo toggle will essentially be a
-          * no-op.
-          */
-         if (last_non_turbo_profile < 0)
-             last_non_turbo_profile = ACER_PREDATOR_V4_THERMAL_PROFILE_TURBO;
-     }
- 
-     return 0;
- }
- 
- static int acer_predator_state_update(int value);
- 
- static acpi_status acer_predator_state_restore(int value);
- 
- static acpi_status battery_health_set(u8 function, u8 function_status);
- 
- static const struct platform_profile_ops acer_predator_v4_platform_profile_ops = {
-     .probe = acer_predator_v4_platform_profile_probe,
-     .profile_get = acer_predator_v4_platform_profile_get,
-     .profile_set = acer_predator_v4_platform_profile_set,
- };
- 
- static int acer_platform_profile_setup(struct platform_device *pdev)
- {
-     const int max_retries = 10;
-     int delay_ms = 100;
-     if (!quirks->predator_v4 && !quirks->nitro_sense && !quirks->nitro_v4)
-         return 0;
-     for (int attempt = 1; attempt <= max_retries; attempt++) {
-         platform_profile_device = devm_platform_profile_register(
-             &pdev->dev, "acer-wmi", NULL, &acer_predator_v4_platform_profile_ops);
-         if (!IS_ERR(platform_profile_device)) {
-             platform_profile_support = true;
-             pr_info("Platform profile registered successfully (attempt %d)\n", attempt);
-             return 0;
-         }
-         pr_warn("Platform profile registration failed (attempt %d/%d), error: %ld\n",
-                 attempt, max_retries, PTR_ERR(platform_profile_device));
-         if (attempt < max_retries) {
-             msleep(delay_ms);
-             delay_ms = min(delay_ms * 2, 1000);
-         }
-     }
-     pr_warn("Platform profile setup failed. Continuing to load without profile support.\n");
-     platform_profile_support = false; /* Disable platform profile support if unavailable. */
-     
-     return 0;
- }
+/* Platform profile support removed for compatibility with older kernel
+ * headers. The functions that integrate with linux's platform_profile
+ * API were omitted because the Debian-provided headers on this system
+ * expose a different API surface than the module expects. This is a
+ * compatibility shim: platform profile related behavior will be
+ * disabled at build/runtime, while core features remain intact.
+ */
+
+static int acer_predator_state_update(int value);
+
+static acpi_status acer_predator_state_restore(int value);
+
+static acpi_status battery_health_set(u8 function, u8 function_status);
  
  static int acer_thermal_profile_change(void)
  {
@@ -2423,7 +2253,7 @@ enum acer_wmi_predator_v4_oc {
          if (tp != acer_predator_v4_max_perf)
              last_non_turbo_profile = tp;
  
-         platform_profile_notify(platform_profile_device);
+        /* platform_profile_notify() omitted for compatibility with older kernels */
      }
  
      return 0;
@@ -4098,11 +3928,12 @@ enum acer_wmi_predator_v4_oc {
      if (err)
          goto error_rfkill;
  
-     if (has_cap(ACER_CAP_PLATFORM_PROFILE)) {
-         err = acer_platform_profile_setup(device);
-         if (err)
-             goto error_platform_profile;
-     }
+    if (has_cap(ACER_CAP_PLATFORM_PROFILE)) {
+        /* Platform profile support disabled for this build/kernel headers.
+         * Skipping platform_profile registration and integration.
+         */
+        platform_profile_support = false;
+    }
  
      if (has_cap(ACER_CAP_PREDATOR_SENSE)) {
          err = sysfs_create_group(&device->dev.kobj, &preadtor_sense_attr_group);

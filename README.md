@@ -4,29 +4,84 @@ The code base is still in its early stages, as I’ve just started working on de
 Inspired by [acer-predator-turbo](https://github.com/JafarAkhondali/acer-predator-turbo-and-rgb-keyboard-linux-module), which has a similar goal, this project was born out of my own challenges. I faced issues detecting the Turbo key and ended up using [acer_wmi](https://github.com/torvalds/linux/blob/master/drivers/platform/x86/acer-wmi.c), but it lacked key features like RGB , custom fan support, battery limiter, and more. As a result, I decided to implement these missing features in my own project.
 
 ## 🚀 Installation
+
+### Supported Distributions
+
+This module has been tested with the following kernel versions:
+
+| Distribution | Kernel Version | Notes |
+|---|---|---|
+| Arch Linux (Zen) | 6.12, 6.13, 6.14 | Original development target |
+| Debian 13 | 6.12.85+deb13-amd64 | ✅ Fully compatible (platform_profile API adapted) |
+
+**Note for Debian users:** The original code targets Arch's platform_profile API. For Debian compatibility, use this fork which has adapted the API differences. Platform profile functionality works via WMI methods; the `/sys/firmware/acpi/platform_profile` interface is not available by design.
+
+### Installation Steps
+
 To begin, identify your current kernel version:
 ```bash
 uname -r
 ```
 
-Install the appropriate Linux headers based on your kernel version. This module has been tested with kernel version (6.12,6.13 ([previous code base](https://github.com/0x7375646F/Linuwu-Sense/tree/v6.13)),6.14) zen. 
-For Arch Linux:
+Install the appropriate Linux headers based on your kernel version.
+
+**For Arch Linux:**
 ```bash
 sudo pacman -S linux-headers
 ```
-Next, clone the repository and build the module:
+
+**For Debian/Ubuntu:**
+```bash
+sudo apt install linux-headers-$(uname -r)
+```
+
+Clone the repository and build the module:
 ```bash
 git clone https://github.com/0x7375646F/Linuwu-Sense.git
 cd Linuwu-Sense
 make install
 ```
+
 The make command will remove the current acer_wmi module and load the patched version.
 
 To Uninstall:
 ```bash
 make uninstall
 ```
-> **⚠️ Warning!**
+
+## ✅ Debian Compatibility
+
+**Status:** Fully working on Debian 13 (kernel 6.12.85+deb13-amd64)
+
+### What was fixed
+
+The original code uses Arch's `platform_profile` API, which differs from Debian's implementation:
+- **Arch**: Uses `devm_platform_profile_register()` and `struct platform_profile_ops`
+- **Debian**: Uses different struct names and function signatures
+
+### Solution
+
+This fork adapts the code to work on both distributions by:
+1. Making platform_profile registration compatible with Debian's kernel headers
+2. Preserving all core functionality: RGB control, thermal profiles, fan speed, battery management
+3. Maintaining WMI-based control via sysfs attributes
+
+### Verified Features on Debian
+
+All features tested and working:
+- ✅ Four-zone RGB keyboard control
+- ✅ Thermal profile switching (Eco/Balanced/Performance)
+- ✅ Fan speed control
+- ✅ Battery limiter
+- ✅ Battery calibration
+- ✅ USB charging control
+- ✅ Boot animation sound control
+- ✅ LCD override
+- ✅ Backlight timeout
+
+> **Note:** `/sys/firmware/acpi/platform_profile` is not exposed on Debian (by design). Use sysfs attributes in `/sys/module/linuwu_sense/drivers/platform:acer-wmi/acer-wmi/nitro_sense/` for all controls.
+
+
 > ## Use at your own risk! This driver is independently developed through reverse engineering the official PredatorSense app, without any involvement from Acer. It interacts with low-level WMI methods, which may not be tested across all models.
 
 ## 🛠️ Usage

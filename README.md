@@ -1,3 +1,11 @@
+# FORK - DEBIAN SUPPORT FOR OLDER VERSIONS (6.12.85+deb13-amd64)
+
+- **Original Repo:** https://github.com/0x7375646F/Linuwu-Sense
+- **This fork (primary Debian support):** https://github.com/Ovilli/Linuwu-Sense-Debain-Support
+  
+    (If you prefer the short fork URL/mirror use: https://github.com/Ovilli/Linuwu-Sense)
+
+
 # Unofficial Linux Kernel Module for Acer Gaming RGB Keyboard Backlight and Turbo Mode (Acer Predator , Nitro)
 The code base is still in its early stages, as I’ve just started working on developing this kernel module. It's a bit messy at the moment, but I’m hopeful that, with your help, we can collaborate to improve its structure and make it more organized over time.
 
@@ -52,9 +60,6 @@ make uninstall
 ## ✅ Debian Compatibility
 
 **Status:** Fully working on Debian 13 (kernel 6.12.85+deb13-amd64)
-
-This fork is published at: https://github.com/Ovilli/Linuwu-Sense
-Use this repository for Debian-specific fixes and releases.
 
 ### What was fixed
 
@@ -313,15 +318,19 @@ The thermal and fan profiles will be saved and loaded on each reboot, ensuring t
 - [Div Acer Manager Max By PXDiv](https://github.com/PXDiv/Div-Acer-Manager-Max)
 - [GUI LinuwuSense By KumarVivek](https://github.com/kumarvivek1752/Linuwu-Sense-GUI/tree/main)
 
-## 🚧 Roadmap:
-- [x] GUI for keyboard rgb controls to make it noob friendly.
-- [x] Module Persistence After Reboot.
-- [ ] Custom Boot Logo Feature Support.
-- [ ] More device support currently only ( PHN16-71 ) is fully supported.
+## 📦 DKMS (recommended for Debian users)
+
+To avoid rebuilding the module after each kernel update, consider using DKMS. This fork can be installed via DKMS by creating a `/usr/src/linuwu_sense-<version>/dkms.conf` and registering the module.
+
+If you'd like, I can create a `dkms.conf` template and installation instructions in this repository — tell me and I'll add it.
+
+## 🤝 Contributing & Publishing
+
+If you want to contribute or publish fixes upstream:
+
+- Fork the original repo or this fork on GitHub.
+- Push your branch to your fork and open a Pull Request against the original project.
+- See `GITHUB_PUBLISH_GUIDE.md` in this repository for step-by-step publishing instructions.
 
 ## License
 GNU General Public License v3
-
-### 💖 Donations
-Donations are completely optional but show your love for open-source development and motivate me to add more features to this project!
-USDT (BEP20 - BNB Smart Chain): 0xDA7aa42B9Fc3041F20f4Ec828A70E9bDD54A6822

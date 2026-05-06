@@ -37,7 +37,7 @@ sudo apt install linux-headers-$(uname -r)
 
 Clone the repository and build the module:
 ```bash
-git clone https://github.com/0x7375646F/Linuwu-Sense.git
+git clone https://github.com/Ovilli/Linuwu-Sense-Debain-Support.git
 cd Linuwu-Sense
 make install
 ```
@@ -52,6 +52,9 @@ make uninstall
 ## ✅ Debian Compatibility
 
 **Status:** Fully working on Debian 13 (kernel 6.12.85+deb13-amd64)
+
+This fork is published at: https://github.com/Ovilli/Linuwu-Sense
+Use this repository for Debian-specific fixes and releases.
 
 ### What was fixed
 

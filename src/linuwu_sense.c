@@ -3298,7 +3298,7 @@ static acpi_status battery_health_set(u8 function, u8 function_status);
      }
  
      file = filp_open(STATE_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-     if(!file) {
+     if(IS_ERR(file)) {
          pr_info("state_access - Error opening file\n");
          return -1;
      }
@@ -3827,7 +3827,7 @@ static acpi_status battery_health_set(u8 function, u8 function_status);
      four_zone_kb_state_update();
  
      file = filp_open(KB_STATE_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-     if(!file) {
+     if(IS_ERR(file)) {
          pr_err("kb_state_access - Error opening file\n");
          return -1;
      }

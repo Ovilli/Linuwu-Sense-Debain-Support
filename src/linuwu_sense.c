@@ -13,6 +13,7 @@
  
  #include <linux/delay.h>
  #include <linux/kernel.h>
+ #include <linux/string.h>
  #include <linux/module.h>
  #include <linux/init.h>
  #include <linux/types.h>
@@ -44,9 +45,13 @@
  #include <linux/bitfield.h>
  #include <linux/bitmap.h>
  
+/* Read by DAMX via nitro_sense/version; keep in step with DAMX's bundled driver. */
+#define DRIVER_VERSION "25.701"
+
  MODULE_AUTHOR("Carlos Corbacho");
  MODULE_DESCRIPTION("Acer Laptop WMI Extras Driver");
  MODULE_LICENSE("GPL");
+ MODULE_VERSION(DRIVER_VERSION);
  
  /*
   * Magic Number
@@ -3357,7 +3362,7 @@ static void acer_platform_profile_remove(void)
      char *token;
      char* input_ptr = input;
      size_t len = min(count, sizeof(input) - 1);
-     strncpy(input, buf, len);
+     strscpy(input, buf, sizeof(input));
  
      if(input[len-1] == '\n'){
          input[len-1] = '\0';
@@ -3658,7 +3663,14 @@ static void acer_platform_profile_remove(void)
  static struct device_attribute battery_limiter = __ATTR(battery_limiter, 0644, predator_battery_limit_show, predator_battery_limit_store);
  static struct device_attribute fan_speed = __ATTR(fan_speed, 0644, predator_fan_speed_show, predator_fan_speed_store);
  static struct device_attribute lcd_override = __ATTR(lcd_override, 0644, predator_lcd_override_show, predator_lcd_override_store);
+ static ssize_t version_show(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+     return sysfs_emit(buf, "%s\n", DRIVER_VERSION);
+ }
+ static DEVICE_ATTR_RO(version);
+
  static struct attribute *predator_sense_attrs[] = {
+     &dev_attr_version.attr,
      &lcd_override.attr,
      &fan_speed.attr,
      &battery_limiter.attr,
@@ -3679,6 +3691,7 @@ static void acer_platform_profile_remove(void)
  
  /* nitro sense attributes */
  static struct attribute *nitro_sense_attrs[] = {
+     &dev_attr_version.attr,
      &fan_speed.attr,
      &battery_limiter.attr,
      &battery_calibration.attr,
@@ -3808,7 +3821,7 @@ static void acer_platform_profile_remove(void)
      char *input_ptr = input_buf;
      size_t len = min(count, sizeof(input_buf) - 1);
  
-     strncpy(input_buf, buf, len);
+     strscpy(input_buf, buf, sizeof(input_buf));
  
      if(input_buf[len-1] == '\n'){
          input_buf[len-1] = '\0';
@@ -3981,7 +3994,7 @@ static void acer_platform_profile_remove(void)
      struct per_zone_color colors;
      char *input_ptr = str_buf;
      len = min(count, sizeof(str_buf) - 1);
-     strncpy(str_buf, buf, len);
+     strscpy(str_buf, buf, sizeof(str_buf));
      if(str_buf[len-1] == '\n'){
          str_buf[len-1] = '\0';
      } else {

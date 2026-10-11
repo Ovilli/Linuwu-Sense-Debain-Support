@@ -1,0 +1,2 @@
+# Let group linuwu_sense set fans (gamemode hook) after every driver load, not only at boot.
+ACTION=="add|bind", SUBSYSTEM=="platform", KERNEL=="acer-wmi", RUN+="/bin/sh -c 'chgrp linuwu_sense /sys%p/nitro_sense/fan_speed && chmod 0664 /sys%p/nitro_sense/fan_speed'"

@@ -1,25 +1,43 @@
-# Kernel module build artifacts
+# Build artifacts
 *.o
+*.o.cmd
 *.ko
+*.ko.cmd
+*.mod
+*.mod.cmd
 *.mod.c
 *.mod.o
-*.mod
-*.cmd
-Module.symvers
-modules.order
+*.mod.o.cmd
 .*.cmd
 .module*
+*.symvers
+*.symvers.cmd
+.tmp_versions/
+Module.symvers
+modules.order
+modules.order.cmd
+*.order
+*.order.cmd
+
+# ACPI dumps (personal hardware info)
+*.dat
+*.dsl
+*.aml
 
 # Editor files
 *~
 *.swp
 *.swo
-.vscode/
-.idea/
+.*.sw?
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.iml
 
 # Backup files
 *.save
